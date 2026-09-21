@@ -1,0 +1,67 @@
+/*
+  Battery Monitor Starter
+  
+  This circuit demonstrates how to safely measure high voltages 
+  (like a 9V battery) by using a 130k Ohm resistor bridge and 
+  the Analog Reference (AREF) pin for high-precision readings.
+
+  The circuit:
+  * Potentiometer simulates a draining 9V battery
+  * 130k resistor protects the A1 pin from high voltage
+  * 3.3V connected to AREF sets the measurement "scale"
+  * I2C LCD displays the live voltage and system status
+*/
+
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+// Initialize the LCD (address 32 is standard for Tinkercad)
+LiquidCrystal_I2C lcd(32, 16, 2); 
+
+const int buzzerPin = 8;
+const int sensorPin = A1;
+
+void setup() {
+  // Use EXTERNAL to tell Arduino to measure against the 3.3V AREF pin
+  analogReference(EXTERNAL); 
+  
+  pinMode(buzzerPin, OUTPUT);
+  
+  lcd.init();
+  lcd.backlight();
+  
+  // Professional boot sequence
+  lcd.print("BATT-MONITOR V1");
+  lcd.setCursor(0, 1);
+  lcd.print("INITIALIZING...");
+  delay(1500);
+  lcd.clear();
+}
+
+void loop() {
+  // Read the analog signal (0-1023)
+  int sensorValue = analogRead(sensorPin);
+  
+  // Calculate voltage at the pin based on 3.3V reference
+  float pinVoltage = sensorValue * (3.3 / 1024.0); 
+
+  // Scale pin voltage to show the actual 0-9V source
+  float batteryLevel = pinVoltage * 2.73; 
+
+  // Update Display
+  lcd.setCursor(0, 0);
+  lcd.print("Voltage: ");
+  lcd.print(batteryLevel);
+  lcd.print("V   ");
+
+  lcd.setCursor(0, 1);
+  if (batteryLevel < 7.0) {
+    lcd.print("STATUS: LOW!    ");
+    tone(buzzerPin, 1500, 100); // Beep alarm
+  } else {
+    lcd.print("STATUS: STABLE  ");
+    noTone(buzzerPin);
+  }
+
+  delay(100); // Small delay for display stability
+}
